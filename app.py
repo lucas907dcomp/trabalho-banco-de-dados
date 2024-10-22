@@ -364,21 +364,40 @@ def atualizar_autor_livro():
 
     try:
         dados = request.json
-        id_autor = dados.get('id_autor')
-        id_livro = dados.get('id_livro')
+        id_autor_antigo = dados.get('id_autor_antigo')  # ID atual do autor na relação
+        id_livro_antigo = dados.get('id_livro_antigo')  # ID atual do livro na relação
+        novo_id_autor = dados.get('id_autor')            # Novo ID do autor (opcional)
+        novo_id_livro = dados.get('id_livro')            # Novo ID do livro (opcional)
 
-        if not id_autor or not id_livro:
-            return jsonify({'erro': 'id_autor e id_livro são obrigatórios!'}), 400
+        if not id_autor_antigo or not id_livro_antigo:
+            return jsonify({'erro': 'id_autor_antigo e id_livro_antigo são obrigatórios!'}), 400
 
         with conn.cursor() as cur:
-            cur.execute("""
-                UPDATE autor_livro 
-                SET id_autor = %s, id_livro = %s
-                WHERE id_autor = %s AND id_livro = %s
-            """, (id_autor, id_livro, id_autor, id_livro))
+            # Atualiza apenas os campos que foram passados na requisição
+            if novo_id_autor and novo_id_livro:
+                cur.execute("""
+                    UPDATE autor_livro 
+                    SET id_autor = %s, id_livro = %s
+                    WHERE id_autor = %s AND id_livro = %s
+                """, (novo_id_autor, novo_id_livro, id_autor_antigo, id_livro_antigo))
+            elif novo_id_autor:
+                cur.execute("""
+                    UPDATE autor_livro 
+                    SET id_autor = %s
+                    WHERE id_autor = %s AND id_livro = %s
+                """, (novo_id_autor, id_autor_antigo, id_livro_antigo))
+            elif novo_id_livro:
+                cur.execute("""
+                    UPDATE autor_livro 
+                    SET id_livro = %s
+                    WHERE id_autor = %s AND id_livro = %s
+                """, (novo_id_livro, id_autor_antigo, id_livro_antigo))
+            else:
+                return jsonify({'erro': 'Pelo menos um campo (id_autor ou id_livro) deve ser fornecido para atualização!'}), 400
+
             conn.commit()
 
-        return jsonify({'mensagem': 'Relação entre autor e livro atualizada com sucesso!'})
+        return jsonify({'mensagem': 'Relação entre autor e livro atualizada com sucesso!'}), 200
     except Exception as e:
         return jsonify({'erro': f'Erro ao atualizar relação: {e}'}), 500
     finally:
