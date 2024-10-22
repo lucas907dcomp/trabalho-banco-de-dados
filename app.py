@@ -531,6 +531,6 @@ def consultar_emprestimos():
     finally:
         conn.close()
 
-# Rodar a aplicação Flask
+
 if __name__ == '__main__':
     app.run(debug=True)
